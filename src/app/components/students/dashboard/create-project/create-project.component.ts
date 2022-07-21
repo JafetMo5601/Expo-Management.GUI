@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { NgxFileDropEntry, FileSystemFileEntry, FileSystemDirectoryEntry } from 'ngx-file-drop';
+import { ProjectsService } from 'src/app/shared/services/projects.service';
+import { CustomPopUpService } from 'src/app/shared/services/custom-pop-up.service';
 
 @Component({
   selector: 'app-create-project',
@@ -9,27 +11,33 @@ import { NgxFileDropEntry, FileSystemFileEntry, FileSystemDirectoryEntry } from 
 })
 export class CreateProjectComponent implements OnInit {
   newProjectForm = new FormGroup({
-    name: new FormControl('', {
+    Name: new FormControl('', {
       validators: [
         Validators.required
       ]
     }),
-    description: new FormControl('', {
+    Description: new FormControl('', {
       validators: Validators.required
     }),
-    teammate1: new FormControl('', {
+    Leader: new FormControl('', {
       validators: Validators.required
     }),
-    teammate2: new FormControl('', {
+    Member2: new FormControl('', {
       validators: Validators.required
     }),
-    category: new FormControl('', {
+    Member3: new FormControl('', {
       validators: Validators.required
     }),
-    creatorLeader: new FormControl(false, {
+    Category: new FormControl('', {
       validators: Validators.required
     })
+    //,
+    // creatorLeader: new FormControl(false, {
+    //   validators: Validators.required
+    // })
   });
+
+  file!: File;
 
   projectCategory = '';
 
@@ -39,12 +47,40 @@ export class CreateProjectComponent implements OnInit {
     {name: 'Categoria 3', value: ''},
   ];
 
-  constructor() { }
+  constructor(
+    private ProjectsService: ProjectsService,
+    private customPopUpService: CustomPopUpService
+  ) { }
 
   ngOnInit(): void {
   }
 
-  onSubmit() {}
+  public createProject() 
+  {
+    console.log('test')
+    this.ProjectsService.CreateProject(
+      this.newProjectForm.controls['Name'].value,
+      this.newProjectForm.controls['Description'].value,
+      this.newProjectForm.controls['Leader'].value,
+      this.newProjectForm.controls['Member2'].value,
+      this.newProjectForm.controls['Member3'].value,
+      this.file,
+      1,
+    ).subscribe(
+      data => {
+        console.log(data);
+        this.openCustomPopUp('Proyecto creado exitosamente!');
+      },
+      err => {
+        console.log(err)
+        if (err.status === 200) {
+          this.openCustomPopUp('Proyecto creado exitosamente!');
+        } else {
+          this.openCustomPopUp('Hubo un error, por favor, intenlo más tarde.');
+        }
+      }
+    );
+  }
 
   public files: NgxFileDropEntry[] = [];
 
@@ -52,33 +88,21 @@ export class CreateProjectComponent implements OnInit {
     this.files = files;
     for (const droppedFile of files) {
 
-      // Is it a file?
       if (droppedFile.fileEntry.isFile) {
         const fileEntry = droppedFile.fileEntry as FileSystemFileEntry;
         fileEntry.file((file: File) => {
+          this.newProjectForm.patchValue({
+            file: file
+          })
 
-          // Here you can access the real file
+          console.log('*******************')
+          console.log(this.newProjectForm);
           console.log(droppedFile.relativePath, file);
 
-          /**
-          // You could upload it like this:
-          const formData = new FormData()
-          formData.append('logo', file, relativePath)
-
-          // Headers
-          const headers = new HttpHeaders({
-            'security-token': 'mytoken'
-          })
-
-          this.http.post('https://mybackend.com/api/upload/sanitize-and-save-logo', formData, { headers: headers, responseType: 'blob' })
-          .subscribe(data => {
-            // Sanitized logo returned from backend
-          })
-          **/
+          
 
         });
       } else {
-        // It was a directory (empty directories are added, otherwise only files)
         const fileEntry = droppedFile.fileEntry as FileSystemDirectoryEntry;
         console.log(droppedFile.relativePath, fileEntry);
       }
@@ -93,4 +117,15 @@ export class CreateProjectComponent implements OnInit {
     console.log(event);
   }
 
+  openCustomPopUp(message: string) {
+    this.customPopUpService.confirm(
+      'Creación de proyecto', 
+      message,
+      'student/new-project'
+      );
+  }
+
+  subirProyecto() {
+
+  }
 }
